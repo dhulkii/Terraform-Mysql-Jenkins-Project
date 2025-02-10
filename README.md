@@ -209,7 +209,6 @@ vendor/bin/phpstan analyse
 <a name="contributing"></a>
 ## Contributing
 
-
 Please see [CONTRIBUTING](CONTRIBUTING.md) for details.
 
 <a name="license"></a>
