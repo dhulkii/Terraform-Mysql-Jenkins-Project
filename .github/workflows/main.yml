@@ -14,53 +14,63 @@ env:
   SERVER_HOST: ${{ secrets.SERVER_HOST }}
   SERVER_USER: ${{ secrets.SERVER_USER }}
   SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+  SERVER_USER_SONAR: ${{ secrets.SERVER_USER_SONAR }}
+  SERVER_HOST_SONAR: ${{ secrets.SERVER_HOST_SONAR }}
+  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
 jobs:
   build:
-    # This condition ensures that the job only runs on push or merged pull requests.
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
     runs-on: ubuntu-latest
-    
+
     steps:
+      - name: Display event type
+        run: echo "Triggered by ${{ github.event_name }}"
 
-    - name: Display event type
-      run: echo "Triggered by ${{ github.event_name }}"
+      # Add both servers' public keys to known_hosts
+      - name: Add server public keys to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.SERVER_HOST_SONAR }} >> ~/.ssh/known_hosts
+          chmod 644 ~/.ssh/known_hosts
 
-    # Add server's public key to known_hosts
-    - name: Add server public key to known_hosts
-      run: |
-        mkdir -p ~/.ssh
-        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
-        chmod 644 ~/.ssh/known_hosts
+      # Set up SSH key for secure connection
+      - name: Set up SSH key
+        run: |
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+          chmod 600 private_key.pem
 
-    # Set up SSH key for server connection
-    - name: Set up SSH key
-      run: |
-        echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
-        chmod 600 private_key.pem
+      # Run SonarQube Analysis on SonarQube Server
+      - name: Run SonarQube Analysis
+        run: |
+          ssh -T -i private_key.pem ${{ secrets.SERVER_USER_SONAR }}@${{ secrets.SERVER_HOST_SONAR }} << 'EOF'
+            cd /home/ubuntu/velflix || exit 1
+            git pull origin main
 
-    # SSH into server and build/run app
-    - name: Build and run on the server
-      run: |
-        ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
-          # Navigate to the project directory
-          cd /home/ubuntu/velflix || exit 1
+            sonar-scanner \
+              -Dsonar.projectKey=velflix \
+              -Dsonar.sources=/home/ubuntu/velflix/src \
+              -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+              -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+          EOF
 
-          # Pull latest changes from the main branch
-          git pull origin main
-          
-          docker compose down
-          docker compose up -d
-        EOF
+      # SSH into the application server and deploy the app
+      - name: Deploy and Restart Application
+        run: |
+          ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+            cd /home/ubuntu/velflix || exit 1
+            git pull origin main
+            docker compose down
+            docker compose up -d
+          EOF
 
-    # Remove the private key file after the SSH connection
-    - name: Clean up SSH private key
-      run: |
-        rm -f private_key.pem
-      if: always()
+      # Cleanup SSH keys
+      - name: Clean up SSH keys
+        run: rm -f private_key.pem
+        if: always()
 
-    # Clean up known_hosts filee
-    - name: Clean up known_hosts file
-      run: |
-        rm -f ~/.ssh/known_hosts
-      if: always()
+      - name: Clean up known_hosts file
+        run: rm -f ~/.ssh/known_hosts
+        if: always()
