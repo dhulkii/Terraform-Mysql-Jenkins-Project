@@ -1,0 +1,66 @@
+name: Deploy to server
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+env:
+  SERVER_HOST: ${{ secrets.SERVER_HOST }}
+  SERVER_USER: ${{ secrets.SERVER_USER }}
+  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+
+jobs:
+  build:
+    # This condition ensures that the job only runs on push or merged pull requests.
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.merged == true)
+    runs-on: ubuntu-latest
+    
+    steps:
+
+    - name: Display event type
+      run: echo "Triggered by ${{ github.event_name }}"
+
+    # Add server's public key to known_hosts
+    - name: Add server public key to known_hosts
+      run: |
+        mkdir -p ~/.ssh
+        ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+        chmod 644 ~/.ssh/known_hosts
+
+    # Set up SSH key for server connection
+    - name: Set up SSH key
+      run: |
+        echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+        chmod 600 private_key.pem
+
+    # SSH into server and build/run app
+    - name: Build and run on the server
+      run: |
+        ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
+          # Navigate to the project directory
+          cd /home/ubuntu/velflix || exit 1
+
+          # Pull latest changes from the main branch
+          git pull origin main
+          
+          docker compose down
+          docker compose up -d
+        EOF
+
+    # Remove the private key file after the SSH connection
+    - name: Clean up SSH private key
+      run: |
+        rm -f private_key.pem
+      if: always()
+
+    # Clean up known_hosts filee
+    - name: Clean up known_hosts file
+      run: |
+        rm -f ~/.ssh/known_hosts
+      if: always()
