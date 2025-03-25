@@ -46,7 +46,7 @@ jobs:
         run: |
           ssh -T -i private_key.pem ${{ secrets.SERVER_USER_SONAR }}@${{ secrets.SERVER_HOST_SONAR }} << 'EOF'
             cd /home/ubuntu/velflix || exit 1
-            vendor/bin/phpunit --coverage-clover=coverage.xml
+            vendor/bin/pest --coverage-clover=coverage.xml
           EOF
       
       # Run SonarQube Analysis on SonarQube Server
