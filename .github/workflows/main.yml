@@ -58,7 +58,7 @@ jobs:
                 -Dsonar.sources=/home/ubuntu/velflix/ \
                 -Dsonar.php.coverage.reportPaths=/home/ubuntu/velflix/coverage.xml \
                 -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-                -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+                -Dsonar.login=${{ secrets.SONAR_TOKEN }}"
           EOF
 
       # SSH into the application server and deploy the app
