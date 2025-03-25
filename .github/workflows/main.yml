@@ -14,8 +14,6 @@ env:
   SERVER_HOST: ${{ secrets.SERVER_HOST }}
   SERVER_USER: ${{ secrets.SERVER_USER }}
   SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-  SERVER_USER_SONAR: ${{ secrets.SERVER_USER_SONAR }}
-  SERVER_HOST_SONAR: ${{ secrets.SERVER_HOST_SONAR }}
   SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
   SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
 
@@ -44,7 +42,7 @@ jobs:
 
       - name: Run PHPUnit Tests with Coverage
         run: |
-          ssh -T -i private_key.pem ${{ secrets.SERVER_USER_SONAR }}@${{ secrets.SERVER_HOST_SONAR }} << 'EOF'
+          ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             cd /home/ubuntu/velflix || exit 1
             vendor/bin/pest --coverage-clover=coverage.xml
           EOF
@@ -52,7 +50,7 @@ jobs:
       # Run SonarQube Analysis on SonarQube Server
       - name: Run SonarQube Analysis
         run: |
-          ssh -T -i private_key.pem ${{ secrets.SERVER_USER_SONAR }}@${{ secrets.SERVER_HOST_SONAR }} << 'EOF'
+          ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             cd /home/ubuntu/velflix || exit 1
             git pull origin main
 
