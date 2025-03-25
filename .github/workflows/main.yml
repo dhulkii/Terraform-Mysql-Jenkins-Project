@@ -52,7 +52,7 @@ jobs:
           ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             cd /home/ubuntu/velflix || exit 1
             git pull origin main
-            docker exec -it sonarqube bash -c "
+            docker exec sonarqube bash -c "
               sonar-scanner \
                 -Dsonar.projectKey=sonar-key \
                 -Dsonar.sources=/home/ubuntu/velflix/ \
