@@ -51,7 +51,7 @@ jobs:
 
             sonar-scanner \
               -Dsonar.projectKey=velflix \
-              -Dsonar.sources=/home/ubuntu/velflix/src \
+              -Dsonar.sources=/home/ubuntu/velflix/ \
               -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
               -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           EOF
