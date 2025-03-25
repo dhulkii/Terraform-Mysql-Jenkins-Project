@@ -43,8 +43,7 @@ jobs:
         run: |
           ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             cd /home/ubuntu/velflix || exit 1
-            docker exec -it php-app sh
-            vendor/bin/pest --coverage-clover=coverage.xml
+            docker exec php-app vendor/bin/pest --coverage-clover=coverage.xml
           EOF
       
       # Run SonarQube Analysis on SonarQube Server
@@ -55,7 +54,7 @@ jobs:
             git pull origin main
 
             sonar-scanner \
-              -Dsonar.projectKey=velflix \
+              -Dsonar.projectKey=sonar-key \
               -Dsonar.sources=/home/ubuntu/velflix/ \
               -Dsonar.php.coverage.reportPaths=/home/ubuntu/velflix/coverage.xml \
               -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
