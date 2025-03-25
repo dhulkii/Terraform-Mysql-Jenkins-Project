@@ -42,6 +42,12 @@ jobs:
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
           chmod 600 private_key.pem
 
+      - name: Run PHPUnit Tests with Coverage
+        run: |
+          cd /home/ubuntu/velflix
+          vendor/bin/phpunit --coverage-clover=coverage.xml
+
+      
       # Run SonarQube Analysis on SonarQube Server
       - name: Run SonarQube Analysis
         run: |
@@ -52,6 +58,7 @@ jobs:
             sonar-scanner \
               -Dsonar.projectKey=velflix \
               -Dsonar.sources=/home/ubuntu/velflix/ \
+              -Dsonar.php.coverage.reportPaths=/home/ubuntu/velflix/coverage.xml \
               -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
               -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           EOF
