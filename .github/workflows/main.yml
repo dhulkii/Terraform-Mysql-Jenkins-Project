@@ -31,7 +31,6 @@ jobs:
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
-          ssh-keyscan -H ${{ secrets.SERVER_HOST_SONAR }} >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
       # Set up SSH key for secure connection
