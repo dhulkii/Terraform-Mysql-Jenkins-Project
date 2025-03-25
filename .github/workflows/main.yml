@@ -52,13 +52,13 @@ jobs:
           ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             cd /home/ubuntu/velflix || exit 1
             git pull origin main
-
-            sonar-scanner \
-              -Dsonar.projectKey=sonar-key \
-              -Dsonar.sources=/home/ubuntu/velflix/ \
-              -Dsonar.php.coverage.reportPaths=/home/ubuntu/velflix/coverage.xml \
-              -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-              -Dsonar.login=${{ secrets.SONAR_TOKEN }}
+            docker exec -it sonarqube bash -c "
+              sonar-scanner \
+                -Dsonar.projectKey=sonar-key \
+                -Dsonar.sources=/home/ubuntu/velflix/ \
+                -Dsonar.php.coverage.reportPaths=/home/ubuntu/velflix/coverage.xml \
+                -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
+                -Dsonar.login=${{ secrets.SONAR_TOKEN }}
           EOF
 
       # SSH into the application server and deploy the app
