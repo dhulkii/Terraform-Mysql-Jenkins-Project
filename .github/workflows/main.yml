@@ -66,7 +66,7 @@ jobs:
             docker compose up -d
           EOF
 
-      # Cleanup SSH keys
+      # Cleanup SSH keyss
       - name: Clean up SSH keys
         run: rm -f private_key.pem
         if: always()
