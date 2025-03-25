@@ -43,6 +43,7 @@ jobs:
         run: |
           ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
             cd /home/ubuntu/velflix || exit 1
+            docker exec -it php-app sh
             vendor/bin/pest --coverage-clover=coverage.xml
           EOF
       
