@@ -57,7 +57,7 @@ jobs:
             # Install requirements
             #pip install -r requirements.txt
 
-            # Restart services
+            # Restart servicess
             #sudo systemctl restart main.service
             #sudo systemctl restart worker.service
 
