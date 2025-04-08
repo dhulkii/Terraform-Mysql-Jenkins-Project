@@ -65,8 +65,8 @@ jobs:
             #sudo systemctl status worker.service
 
             # 🧹 Clean up dummy file and cache
-            rm -f dummy.gpg
-            gpgconf --kill gpg-agent || true
+            #rm -f dummy.gpg
+            #gpgconf --kill gpg-agent || true
           EOF
 
       - name: Clean up SSH private key
