@@ -15,6 +15,7 @@ env:
   SERVER_USER: ${{ secrets.SERVER_USER_QC }}
   SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_QC }}
   GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+  PAT_TOKEN: ${{ secrets.GH_TOKEN }}
 
 jobs:
   build:
@@ -44,15 +45,7 @@ jobs:
             # Move into project
             cd /home/ubuntu/Terraform-Mysql-Jenkins-Project || exit 1
 
-            # Set GPG_TTY
-            export GPG_TTY=$(tty)
-
-            # 🔥 Unlock GPG agent by creating a dummy file using the passphrase
-            #echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --passphrase-fd 0 --symmetric --cipher-algo AES256 -o dummy.gpg <(echo "dummy content")
-            echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --decrypt ~/.password-store/git/https/github.com/dhulkii.gpg > /dev/null
-
-            # ✅ Now GPG is unlocked, perform Git pull
-            git pull origin main
+            git pull https://dhulkii:${{ secrets.GH_TOKEN }}@github.com/dhulkii/Terraform-Mysql-Jenkins-Project.git main
 
             # Install requirements
             #pip install -r requirements.txt
@@ -63,12 +56,7 @@ jobs:
 
             # Check service status
             #sudo systemctl status main.service
-            #sudo systemctl status worker.service
-
-            # 🧹 Clean up dummy file and cache
-            #rm -f dummy.gpg
-            gpgconf --kill gpg-agent
-            unset GPG_TTY
+            #sudo systemctl status worker.service    
           EOF
 
       - name: Clean up SSH private key
