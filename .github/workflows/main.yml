@@ -48,7 +48,8 @@ jobs:
             export GPG_TTY=$(tty)
 
             # 🔥 Unlock GPG agent by creating a dummy file using the passphrase
-            echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --passphrase-fd 0 --symmetric --cipher-algo AES256 -o dummy.gpg <(echo "dummy content")
+            #echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --passphrase-fd 0 --symmetric --cipher-algo AES256 -o dummy.gpg <(echo "dummy content")
+            echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --pinentry-mode loopback --passphrase-fd 0 --decrypt ~/.password-store/git/https/github.com/dhulkii.gpg > /dev/null
 
             # ✅ Now GPG is unlocked, perform Git pull
             git pull origin main
@@ -65,8 +66,9 @@ jobs:
             #sudo systemctl status worker.service
 
             # 🧹 Clean up dummy file and cache
-            rm -f dummy.gpg
-            gpgconf --kill gpg-agent || true
+            #rm -f dummy.gpg
+            gpgconf --kill gpg-agent
+            unset GPG_TTY
           EOF
 
       - name: Clean up SSH private key
