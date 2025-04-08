@@ -1,4 +1,4 @@
-name: Deploy to server
+name: Deploy to Production
 
 on:
   push:
@@ -11,11 +11,10 @@ on:
       - main
 
 env:
-  SERVER_HOST: ${{ secrets.SERVER_HOST }}
-  SERVER_USER: ${{ secrets.SERVER_USER }}
-  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
-  SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-  SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+  SERVER_HOST: ${{ secrets.SERVER_HOST_QC }}
+  SERVER_USER: ${{ secrets.SERVER_USER_QC }}
+  SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY_QC }}
+  GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
 
 jobs:
   build:
@@ -26,53 +25,51 @@ jobs:
       - name: Display event type
         run: echo "Triggered by ${{ github.event_name }}"
 
-      # Add both servers' public keys to known_hosts
-      - name: Add server public keys to known_hosts
+      - name: Add server public key to known_hosts
         run: |
           mkdir -p ~/.ssh
-          ssh-keyscan -H ${{ secrets.SERVER_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.SERVER_HOST_QC }} >> ~/.ssh/known_hosts
           chmod 644 ~/.ssh/known_hosts
 
-      # Set up SSH key for secure connection
       - name: Set up SSH key
         run: |
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > private_key.pem
+          echo "${{ secrets.SSH_PRIVATE_KEY_QC }}" > private_key.pem
           chmod 600 private_key.pem
 
-      - name: Run PHPUnit Tests with Coverage
+      - name: Build and run on the server
         run: |
-          ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
-            cd /home/ubuntu/velflix || exit 1
-            # docker exec php-app vendor/bin/pest --coverage-clover=coverage.xml
-          EOF
-      
-      # Run SonarQube Analysis on SonarQube Server
-      - name: Run SonarQube Analysis
-        run: |
-          ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
-            cd /home/ubuntu/velflix || exit 1
+          ssh -T -i private_key.pem ${{ secrets.SERVER_USER_QC }}@${{ secrets.SERVER_HOST_QC }} << 'EOF'
+            set -e  # Exit if any command fails
+
+            # Move into project
+            cd /home/ubuntu/Terraform-Mysql-Jenkins-Project || exit 1
+
+            # Set GPG_TTY
+            export GPG_TTY=$(tty)
+
+            # 🔥 Unlock GPG agent by creating a dummy file using the passphrase
+            echo "${{ secrets.GPG_PASSPHRASE }}" | gpg --batch --yes --passphrase-fd 0 --symmetric --cipher-algo AES256 -o dummy.gpg <(echo "dummy content")
+
+            # ✅ Now GPG is unlocked, perform Git pull
             git pull origin main
-            docker exec sonarqube bash -c "
-              sonar-scanner \
-                -Dsonar.projectKey=sonar-key \
-                -Dsonar.sources=/home/ubuntu/velflix/ \
-                -Dsonar.php.coverage.reportPaths=/home/ubuntu/velflix/coverage.xml \
-                -Dsonar.host.url=${{ secrets.SONAR_HOST_URL }} \
-                -Dsonar.login=${{ secrets.SONAR_TOKEN }}"
+
+            # Install requirements
+            #pip install -r requirements.txt
+
+            # Restart services
+            #sudo systemctl restart main.service
+            #sudo systemctl restart worker.service
+
+            # Check service status
+            #sudo systemctl status main.service
+            #sudo systemctl status worker.service
+
+            # 🧹 Clean up dummy file and cache
+            rm -f dummy.gpg
+            gpgconf --kill gpg-agent || true
           EOF
 
-      # SSH into the application server and deploy the app
-      - name: Deploy and Restart Application
-        run: |
-          ssh -T -i private_key.pem ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} << 'EOF'
-            cd /home/ubuntu/velflix || exit 1
-            git pull origin main
-            docker compose down
-            docker compose up -d
-          EOF
-
-      # Cleanup SSH keyss
-      - name: Clean up SSH keys
+      - name: Clean up SSH private key
         run: rm -f private_key.pem
         if: always()
 
